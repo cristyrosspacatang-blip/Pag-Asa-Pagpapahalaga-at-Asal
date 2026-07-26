@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAG-ASA: Character Monitoring System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js para sa Visual Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome para sa mga Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: #fff !important; color: #000 !important; }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header Navigation -->
+    <header class="bg-teal-700 text-white shadow-md no-print sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white text-teal-800 p-2 rounded-lg font-bold text-xl shadow">
+                    <i class="fa-solid fa-heart-pulse text-rose-500"></i> PAG-ASA
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold leading-tight">PAG-ASA Monitoring System</h1>
+                    <p class="text-xs text-teal-100">Pagpapahalaga at Asal – DepEd Core Values Monitoring Tool</p>
+                </div>
+            </div>
+            
+            <!-- Tab Buttons -->
+            <nav class="flex space-x-1 bg-teal-800/60 p-1 rounded-xl text-sm font-medium">
+                <button onclick="switchTab('roster')" id="tab-roster" class="tab-btn px-3 py-1.5 rounded-lg transition-all bg-white text-teal-800 shadow">
+                    <i class="fa-solid fa-users mr-1"></i> Mag-aaral
+                </button>
+                <button onclick="switchTab('data-entry')" id="tab-data-entry" class="tab-btn px-3 py-1.5 rounded-lg transition-all text-teal-100 hover:text-white">
+                    <i class="fa-solid fa-pen-to-square mr-1"></i> Pagtatala ng Iskor
+                </button>
+                <button onclick="switchTab('analytics')" id="tab-analytics" class="tab-btn px-3 py-1.5 rounded-lg transition-all text-teal-100 hover:text-white">
+                    <i class="fa-solid fa-chart-pie mr-1"></i> Resulta at Counseling Alerts
+                </button>
+                <button onclick="switchTab('report')" id="tab-report" class="tab-btn px-3 py-1.5 rounded-lg transition-all text-teal-100 hover:text-white">
+                    <i class="fa-solid fa-id-card mr-1"></i> Indibidwal na Report
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6">
+
+        <!-- TAB 1: ROSTER / MAG-AARAL -->
+        <section id="sec-roster" class="space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Talaan ng mga Mag-aaral (Class Roster)</h2>
+                    <p class="text-sm text-slate-500">Ipasok ang pangalan at LRN ng mga mag-aaral sa klase.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="loadDemoData()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-xl transition shadow flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Mabilisang Sample Data (Demo)
+                    </button>
+                    <button onclick="clearAllData()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm px-3 py-2 rounded-xl border border-rose-200 transition">
+                        <i class="fa-solid fa-trash"></i> Burahin Lahat
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Add Student Form -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 h-fit">
+                    <h3 class="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus text-teal-600"></i> Magdagdag ng Mag-aaral
+                    </h3>
+                    <form id="add-student-form" onsubmit="handleAddStudent(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Buong Pangalan (Apelyido, Pangalan)</label>
+                            <input type="text" id="stu-name" placeholder="Halimbawa: Dela Cruz, Juan" required class="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">LRN (Learner Reference No.)</label>
+                            <input type="text" id="stu-lrn" placeholder="12-digit LRN" class="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Kasarian</label>
+                            <select id="stu-gender" class="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                                <option value="Lalaki">Lalaki</option>
+                                <option value="Babae">Babae</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="w-full bg-teal-700 hover:bg-teal-800 text-white font-medium py-2 rounded-xl transition text-sm shadow">
+                            <i class="fa-solid fa-plus mr-1"></i> Idagdag sa Klase
+                        </button>
+                    </form>
+
+                    <div class="mt-6 pt-4 border-t">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Batch Import (Pangalan bawat linya):</label>
+                        <textarea id="batch-names" rows="3" placeholder="Santos, Maria&#10;Reyes, Pedro&#10;Cruz, Ana" class="w-full p-2 border rounded-xl text-xs outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+                        <button onclick="handleBatchImport()" class="w-full mt-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-1.5 rounded-xl text-xs border border-slate-300">
+                            Mabilisang Batch Import
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Student List Table -->
+                <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-800">Talaan ng Mag-aaral (<span id="student-count">0</span>)</h3>
+                        <span class="text-xs text-slate-400">Inirerekomenda: 20-50 mag-aaral bawat klase</span>
+                    </div>
+
+                    <div class="overflow-x-auto custom-scrollbar max-h-[500px]">
+                        <table class="w-full text-sm text-left border-collapse">
+                            <thead class="text-xs uppercase bg-slate-100 text-slate-600 sticky top-0">
+                                <tr>
+                                    <th class="p-3 rounded-l-lg">#</th>
+                                    <th class="p-3">Pangalan</th>
+                                    <th class="p-3">LRN</th>
+                                    <th class="p-3">Kasarian</th>
+                                    <th class="p-3 text-center rounded-r-lg">Aksyon</th>
+                                </tr>
+                            </thead>
+                            <tbody id="student-table-body" class="divide-y divide-slate-100">
+                                <tr>
+                                    <td colspan="5" class="text-center py-8 text-slate-400">
+                                        Wala pang nakatalang mag-aaral. Magdagdag sa kaliwa o pindutin ang <strong>"Mabilisang Sample Data"</strong>.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: DATA ENTRY / PAGTATALA NG ISKOR -->
+        <section id="sec-data-entry" class="space-y-6 hidden">
+            <!-- Mode Switcher -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800">Pagtatala ng Iskor (Rating Entry)</h2>
+                    <p class="text-xs text-slate-500">I-input ang peer evaluation ng mga kamag-aral at ang validation ng guro.</p>
+                </div>
+                <div class="flex flex-wrap gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+                    <button id="mode-btn-form" onclick="setEntryMode('form')" class="px-3 py-1.5 rounded-lg bg-white shadow text-teal-700">
+                        <i class="fa-solid fa-list-check mr-1"></i> Form / Questionnaire View (Recommended)
+                    </button>
+                    <button id="mode-btn-evaluator" onclick="setEntryMode('evaluator')" class="px-3 py-1.5 rounded-lg text-slate-600">
+                        <i class="fa-solid fa-table-cells mr-1"></i> Evaluator Grid
+                    </button>
+                    <button id="mode-btn-target" onclick="setEntryMode('target')" class="px-3 py-1.5 rounded-lg text-slate-600">
+                        <i class="fa-solid fa-user-check mr-1"></i> Target Grid
+                    </button>
+                    <button id="mode-btn-teacher" onclick="setEntryMode('teacher')" class="px-3 py-1.5 rounded-lg text-slate-600">
+                        <i class="fa-solid fa-chalkboard-user mr-1"></i> Teacher Validation (30%)
+                    </button>
+                </div>
+            </div>
+
+            <!-- DepEd Report Card 1-4 Rating Scale Legend -->
+            <div class="bg-teal-50 border border-teal-200 p-4 rounded-2xl">
+                <h4 class="text-xs font-bold text-teal-800 uppercase tracking-wide mb-2">
+                    <i class="fa-solid fa-circle-info"></i> Batayan ng Puntos (DepEd Core Values Scale 1 - 4):
+                </h4>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-teal-900">
+                    <div class="bg-white p-2.5 rounded-lg border border-teal-100 shadow-sm flex items-center justify-between">
+                        <span><strong>1</strong> - Not Observed (NO)</span>
+                        <span class="text-[10px] text-slate-500">Hindi kailanman</span>
+                    </div>
+                    <div class="bg-white p-2.5 rounded-lg border border-teal-100 shadow-sm flex items-center justify-between">
+                        <span><strong>2</strong> - Rarely Observed (RO)</span>
+                        <span class="text-[10px] text-slate-500">Bihira</span>
+                    </div>
+                    <div class="bg-white p-2.5 rounded-lg border border-teal-100 shadow-sm flex items-center justify-between">
+                        <span><strong>3</strong> - Sometimes Observed (SO)</span>
+                        <span class="text-[10px] text-slate-500">Paminsan-minsan</span>
+                    </div>
+                    <div class="bg-white p-2.5 rounded-lg border border-teal-100 shadow-sm flex items-center justify-between">
+                        <span><strong>4</strong> - Always Observed (AO)</span>
+                        <span class="text-[10px] text-slate-500">Palagi</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Entry Container -->
+            <div id="entry-container" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                <!-- Content generated via JavaScript based on mode -->
+            </div>
+        </section>
+
+        <!-- TAB 3: RESULTA AT ANALYTICS & GUIDANCE ALERTS -->
+        <section id="sec-analytics" class="space-y-6 hidden">
+            <!-- Top Summary Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Kabuuang Mag-aaral</p>
+                        <h3 id="stat-total-students" class="text-2xl font-bold text-slate-800">0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-teal-100 text-teal-600 rounded-2xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Pangkalahatang GWA Asal (1-4)</p>
+                        <h3 id="stat-class-gwa" class="text-2xl font-bold text-slate-800">0.00</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">For Individual Counseling (&lt; 2.5)</p>
+                        <h3 id="stat-alerts-count" class="text-2xl font-bold text-rose-600">0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-user-nurse"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Early Intervention Alert Panel -->
+            <div id="alert-panel" class="bg-rose-50 border border-rose-200 p-5 rounded-2xl hidden space-y-3">
+                <div class="flex items-center gap-2 text-rose-800 font-bold">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-600 animate-bounce"></i>
+                    <h3>Individual Counseling Priority Alerts</h3>
+                </div>
+                <p class="text-xs text-rose-700">
+                    Ang mga mag-aaral sa ibaba ay pormal na <strong>inairekomenda para sa 1-on-1 Individual Counseling</strong> sa Guidance Office batay sa kanilang mababang marka (&lt; 2.50 sa 1-4 scale) sa Respect/Bullying, Honesty, o Overall Conduct.
+                </p>
+                <div id="alert-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                    <!-- Dynamic Alert Badges -->
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-slate-800 mb-4 text-sm">GWA per Core Value Trait (Class Average 1-4)</h3>
+                    <div class="h-64">
+                        <canvas id="chart-traits"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-slate-800 mb-4 text-sm">Distribusyon ng Behavioral Status</h3>
+                    <div class="h-64">
+                        <canvas id="chart-distribution"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Full Master Summary Table -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h3 class="font-bold text-slate-800">Master Summary & Behavioral Status Table (Scale 1 - 4)</h3>
+                    <div class="flex items-center gap-2">
+                        <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow">
+                            <i class="fa-solid fa-file-excel"></i> I-export sa Excel / CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-xs text-left border-collapse">
+                        <thead class="bg-slate-100 text-slate-700 uppercase font-semibold">
+                            <tr>
+                                <th class="p-2.5 border-b">Pangalan</th>
+                                <th class="p-2.5 border-b text-center" title="Shows respect and sensitivity to others">T1 (Respect)</th>
+                                <th class="p-2.5 border-b text-center" title="Demonstrates honesty and integrity">T2 (Honesty)</th>
+                                <th class="p-2.5 border-b text-center" title="Expresses spiritual beliefs respectfully">T3 (Spiritual)</th>
+                                <th class="p-2.5 border-b text-center" title="Shows ethical behavior">T4 (Ethics)</th>
+                                <th class="p-2.5 border-b text-center" title="Cares for the environment">T5 (Kalikasan)</th>
+                                <th class="p-2.5 border-b text-center" title="Demonstrates pride as a Filipino">T6 (Makabansa)</th>
+                                <th class="p-2.5 border-b text-center" title="Shows proper behavior">T7 (Community)</th>
+                                <th class="p-2.5 border-b text-center bg-teal-50">Peer (70%)</th>
+                                <th class="p-2.5 border-b text-center bg-blue-50">Guro (30%)</th>
+                                <th class="p-2.5 border-b text-center bg-emerald-100 font-bold">Kabuuan</th>
+                                <th class="p-2.5 border-b text-center">Counseling Flag</th>
+                            </tr>
+                        </thead>
+                        <tbody id="master-table-body" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: INDIBIDWAL NA REPORT CARD / GUIDANCE REPORT -->
+        <section id="sec-report" class="space-y-6 hidden">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4 no-print">
+                <div class="flex items-center gap-3">
+                    <label class="text-sm font-bold text-slate-700">Pumili ng Mag-aaral:</label>
+                    <select id="report-student-select" onchange="generateIndividualReport()" class="px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                        <!-- Student options -->
+                    </select>
+                </div>
+                <button onclick="window.print()" class="bg-teal-700 hover:bg-teal-800 text-white text-xs px-4 py-2 rounded-xl transition shadow flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i> I-print ang Form / PDF
+                </button>
+            </div>
+
+            <!-- Printable Student Report Card -->
+            <div id="report-card-container" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-300 max-w-4xl mx-auto space-y-6">
+                <!-- Top Header -->
+                <div class="text-center border-b pb-4 space-y-1">
+                    <p class="text-xs uppercase font-semibold text-slate-500">Kagawaran ng Edukasyon • DepEd Character Assessment</p>
+                    <h2 class="text-2xl font-bold text-teal-800">PAG-ASA Character Profile Card</h2>
+                    <p class="text-xs text-slate-500">Pagpapahalaga at Asal – Early Intervention & Guidance Counseling Report</p>
+                </div>
+
+                <!-- Student Info Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+                    <div>
+                        <span class="text-slate-400 block">Pangalan:</span>
+                        <strong id="rep-name" class="text-slate-800 text-sm">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">LRN:</span>
+                        <strong id="rep-lrn" class="text-slate-800 text-sm">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">Kasarian:</span>
+                        <strong id="rep-gender" class="text-slate-800 text-sm">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">Marka ng Asal (Conduct Rating):</span>
+                        <strong id="rep-final-score" class="text-teal-700 text-base font-extrabold">-</strong>
+                    </div>
+                </div>
+
+                <!-- Breakdown by Trait -->
+                <div class="space-y-3">
+                    <h3 class="font-bold text-slate-800 text-sm border-b pb-1">Detailed Character Breakdown (7 Observable Traits)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border-collapse">
+                            <thead class="bg-slate-100 text-slate-700">
+                                <tr>
+                                    <th class="p-2 border">Core Value & Observable Trait</th>
+                                    <th class="p-2 border text-center">Peer Rating (70%)</th>
+                                    <th class="p-2 border text-center">Teacher Rating (30%)</th>
+                                    <th class="p-2 border text-center">Pinagsamang Puntos</th>
+                                    <th class="p-2 border text-center">Interpretasyon</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rep-traits-body" class="divide-y divide-slate-100">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Guidance & Behavioral Assessment Notes -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                        <h4 class="font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-clipboard-check text-teal-600"></i> Guidance Assessment & Observations:
+                        </h4>
+                        <div id="rep-guidance-notes" class="text-slate-600 leading-relaxed min-h-[60px]">
+                            -
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                        <h4 class="font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-nurse text-rose-500"></i> Rekomendasyon para sa Intervention:
+                        </h4>
+                        <div id="rep-recommendations" class="text-slate-600 leading-relaxed min-h-[60px]">
+                            -
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Signature Block -->
+                <div class="pt-8 grid grid-cols-2 gap-8 text-center text-xs">
+                    <div>
+                        <div class="border-b border-slate-400 w-3/4 mx-auto mb-1"></div>
+                        <p class="font-bold text-slate-800">Lagda ng Adviser / Guro</p>
+                        <p class="text-slate-400">Class Adviser</p>
+                    </div>
+                    <div>
+                        <div class="border-b border-slate-400 w-3/4 mx-auto mb-1"></div>
+                        <p class="font-bold text-slate-800">Guidance Counselor / Head</p>
+                        <p class="text-slate-400">School Guidance Representative</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400 no-print mt-auto">
+        PAG-ASA System • DepEd Aligned Character Monitoring & Early Intervention Tool
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Definition of 7 DepEd Core Value Traits matching uploaded image
+        const TRAITS = [
+            { id: 1, title: "Shows respect and sensitivity to others (Makatao)", desc: "Hindi nang-aasar o nangbubulas; maayos makitungo sa kapwa.", core: "Makatao" },
+            { id: 2, title: "Demonstrates honesty and integrity (Makatao)", desc: "Nagsasabi ng katotohanan; inaamin ang pagkakamali.", core: "Makatao" },
+            { id: 3, title: "Expresses spiritual beliefs respectfully (Makadiyos)", desc: "Prayerful; nirerespeto ang paniniwala ng iba.", core: "Makadiyos" },
+            { id: 4, title: "Shows ethical behavior based on truth and goodness (Makadiyos)", desc: "Gumagawa ng tama kahit walang nakakakita; may konsensya sa kilos.", core: "Makadiyos" },
+            { id: 5, title: "Cares for the environment and utilizes resources wisely, judiciously, and economically", desc: "Naglilinis ng kapaligiran; proper waste disposal at recycling; hindi nag-aaksaya ng tubig at kuryente; inaalagaan ang kalikasan.", core: "Makakalikasan" },
+            { id: 6, title: "Demonstrates pride as a Filipino (Makabansa)", desc: "Nakikiisa sa flag ceremony; pinahahalagahan ang kultura.", core: "Makabansa" },
+            { id: 7, title: "Shows proper behavior in school and community (Makabansa)", desc: "Sumusunod sa school policies; responsable sa gawain.", core: "Makabansa" }
+        ];
+
+        // Global State
+        let students = []; // Array of { id, name, lrn, gender }
+        let peerScores = {}; // Map: evaluatorId -> targetId -> traitId (1-7) -> score (1-4)
+        let teacherScores = {}; // Map: targetId -> traitId (1-7) -> score (1-4)
+        let currentEntryMode = 'form'; // 'form' | 'evaluator' | 'target' | 'teacher'
+        let chartTraits = null;
+        let chartDistribution = null;
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            loadFromLocalStorage();
+            renderStudentTable();
+            renderEntryContainer();
+        });
+
+        // Tab Switching Logic
+        function switchTab(tabName) {
+            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-teal-800', 'shadow');
+                btn.classList.add('text-teal-100');
+            });
+
+            document.getElementById(`sec-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.add('bg-white', 'text-teal-800', 'shadow');
+            activeBtn.classList.remove('text-teal-100');
+
+            if (tabName === 'analytics') {
+                updateAnalytics();
+            } else if (tabName === 'report') {
+                populateReportDropdown();
+                generateIndividualReport();
+            } else if (tabName === 'data-entry') {
+                renderEntryContainer();
+            }
+        }
+
+        // Student Roster Functions
+        function handleAddStudent(e) {
+            e.preventDefault();
+            const name = document.getElementById('stu-name').value.trim();
+            const lrn = document.getElementById('stu-lrn').value.trim() || 'N/A';
+            const gender = document.getElementById('stu-gender').value;
+
+            if (!name) return;
+
+            const newStu = {
+                id: 'S' + Date.now() + Math.floor(Math.random() * 100),
+                name: name,
+                lrn: lrn,
+                gender: gender
+            };
+
+            students.push(newStu);
+            saveToLocalStorage();
+            renderStudentTable();
+
+            document.getElementById('add-student-form').reset();
+        }
+
+        function handleBatchImport() {
+            const raw = document.getElementById('batch-names').value;
+            const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            
+            lines.forEach((line, index) => {
+                students.push({
+                    id: 'S' + Date.now() + index,
+                    name: line,
+                    lrn: 'N/A',
+                    gender: 'Lalaki'
+                });
+            });
+
+            document.getElementById('batch-names').value = '';
+            saveToLocalStorage();
+            renderStudentTable();
+        }
+
+        function deleteStudent(id) {
+            if (confirm("Sigurado ka bang gusto mong burahin ang mag-aaral na ito?")) {
+                students = students.filter(s => s.id !== id);
+                delete peerScores[id];
+                saveToLocalStorage();
+                renderStudentTable();
+            }
+        }
+
+        function renderStudentTable() {
+            const tbody = document.getElementById('student-table-body');
+            document.getElementById('student-count').textContent = students.length;
+
+            if (students.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-8 text-slate-400">
+                            Wala pang nakatalang mag-aaral. Magdagdag sa kaliwa o pindutin ang <strong>"Mabilisang Sample Data"</strong>.
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = students.map((s, idx) => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 font-semibold text-slate-500">${idx + 1}</td>
+                    <td class="p-3 font-medium text-slate-800">${escapeHtml(s.name)}</td>
+                    <td class="p-3 text-slate-500">${escapeHtml(s.lrn)}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 text-xs rounded-md ${s.gender === 'Lalaki' ? 'bg-blue-50 text-blue-700' : 'bg-pink-50 text-pink-700'}">
+                            ${s.gender}
+                        </span>
+                    </td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteStudent('${s.id}')" class="text-rose-500 hover:text-rose-700 p-1">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Demo Data Generator (Populates 10 sample students with 1-4 scale)
+        function loadDemoData() {
+            const sampleNames = [
+                { name: "Abad, Juan Carlos", gender: "Lalaki" },
+                { name: "Bautista, Maria Clara", gender: "Babae" },
+                { name: "Cruz, Christian Dave", gender: "Lalaki" },
+                { name: "Dizon, Angela Grace", gender: "Babae" },
+                { name: "Espina, Joshua Mark", gender: "Lalaki" },
+                { name: "Flores, Sofia Isabel", gender: "Babae" },
+                { name: "Garcia, Gabriel", gender: "Lalaki" },
+                { name: "Hernandez, Bea Patricia", gender: "Babae" },
+                { name: "Ibarra, Crisostomo", gender: "Lalaki" },
+                { name: "Joaquin, Nicole", gender: "Babae" }
+            ];
+
+            students = sampleNames.map((item, idx) => ({
+                id: 'STU_' + (idx + 1),
+                name: item.name,
+                lrn: '10982345' + (10 + idx),
+                gender: item.gender
+            }));
+
+            peerScores = {};
+            teacherScores = {};
+
+            students.forEach(evaluator => {
+                peerScores[evaluator.id] = {};
+                students.forEach(target => {
+                    if (evaluator.id !== target.id) {
+                        peerScores[evaluator.id][target.id] = {};
+                        const isOutlier = (target.id === 'STU_3');
+                        
+                        TRAITS.forEach(t => {
+                            let base = isOutlier && (t.id === 1 || t.id === 2) ? 1.8 : 3.5;
+                            let score = Math.min(4, Math.max(1, Math.round(base + (Math.random() * 1.2 - 0.6))));
+                            peerScores[evaluator.id][target.id][t.id] = score;
+                        });
+                    }
+                });
+            });
+
+            students.forEach(target => {
+                teacherScores[target.id] = {};
+                const isOutlier = (target.id === 'STU_3');
+                TRAITS.forEach(t => {
+                    let base = isOutlier && (t.id === 1 || t.id === 2) ? 1.5 : 3.8;
+                    let score = Math.min(4, Math.max(1, Math.round(base + (Math.random() * 0.8 - 0.4))));
+                    teacherScores[target.id][t.id] = score;
+                });
+            });
+
+            saveToLocalStorage();
+            renderStudentTable();
+            alert("Matagumpay na naisaayos ang 10 sample mag-aaral na may kumpletong 1-4 DepEd rating scale!");
+        }
+
+        function clearAllData() {
+            if (confirm("Sigurado ka bang burahin ang LAHAT ng mag-aaral at mga iskor?")) {
+                students = [];
+                peerScores = {};
+                teacherScores = {};
+                saveToLocalStorage();
+                renderStudentTable();
+            }
+        }
+
+        // Data Entry Mode Switcher
+        function setEntryMode(mode) {
+            currentEntryMode = mode;
+            ['form', 'evaluator', 'target', 'teacher'].forEach(m => {
+                const btn = document.getElementById(`mode-btn-${m}`);
+                if (btn) {
+                    if (m === mode) {
+                        btn.className = "px-3 py-1.5 rounded-lg bg-white shadow text-teal-700 font-bold";
+                    } else {
+                        btn.className = "px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800";
+                    }
+                }
+            });
+            renderEntryContainer();
+        }
+
+        function renderEntryContainer() {
+            const container = document.getElementById('entry-container');
+            if (students.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-slate-400">
+                        <i class="fa-solid fa-users-slash text-4xl mb-3"></i>
+                        <p>Mangyaring magdagdag muna ng mga mag-aaral sa tab na <strong>"Mag-aaral"</strong>.</p>
+                    </div>`;
+                return;
+            }
+
+            if (currentEntryMode === 'form') {
+                renderQuestionnaireFormMode(container);
+            } else if (currentEntryMode === 'evaluator') {
+                renderEvaluatorMode(container);
+            } else if (currentEntryMode === 'target') {
+                renderTargetMode(container);
+            } else if (currentEntryMode === 'teacher') {
+                renderTeacherMode(container);
+            }
+        }
+
+        // MODE 0: FORM / QUESTIONNAIRE VIEW (1-4 scale)
+        function renderQuestionnaireFormMode(container) {
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-teal-50/70 p-4 rounded-xl border border-teal-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-teal-900 uppercase tracking-wide mb-1">
+                                <i class="fa-solid fa-user-pen text-teal-600 mr-1"></i> 1. Tagasuri (Evaluator):
+                            </label>
+                            <select id="form-evaluator" onchange="updateFormTargets()" class="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none bg-white">
+                                ${students.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-teal-900 uppercase tracking-wide mb-1">
+                                <i class="fa-solid fa-user-tag text-teal-600 mr-1"></i> 2. Kamag-aral na Tinatasa (Target Student):
+                            </label>
+                            <select id="form-target" onchange="renderFormQuestions()" class="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none bg-white">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="form-questions-wrapper" class="space-y-4">
+                        <!-- Questions 1 to 7 will be rendered here -->
+                    </div>
+                </div>
+            `;
+            updateFormTargets();
+        }
+
+        function updateFormTargets() {
+            const evalId = document.getElementById('form-evaluator').value;
+            const targetSelect = document.getElementById('form-target');
+            const targetStudents = students.filter(s => s.id !== evalId);
+
+            if (targetStudents.length === 0) {
+                targetSelect.innerHTML = `<option value="">Walang ibang mag-aaral</option>`;
+                document.getElementById('form-questions-wrapper').innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">Magdagdag pa ng mag-aaral sa klase.</p>`;
+                return;
+            }
+
+            targetSelect.innerHTML = targetStudents.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+            renderFormQuestions();
+        }
+
+        function renderFormQuestions() {
+            const evalId = document.getElementById('form-evaluator').value;
+            const targetId = document.getElementById('form-target').value;
+            const wrapper = document.getElementById('form-questions-wrapper');
+
+            if (!evalId || !targetId) return;
+
+            if (!peerScores[evalId]) peerScores[evalId] = {};
+            if (!peerScores[evalId][targetId]) peerScores[evalId][targetId] = {};
+
+            const targetStu = students.find(s => s.id === targetId);
+
+            let html = `
+                <div class="border-b pb-2 flex justify-between items-center">
+                    <p class="text-sm font-bold text-slate-700">
+                        Inaases ni <span class="text-teal-700">${escapeHtml(students.find(s => s.id === evalId)?.name)}</span> si <span class="text-teal-700">${escapeHtml(targetStu?.name)}</span>:
+                    </p>
+                    <span class="text-xs text-slate-400">Pumili ng 1 hanggang 4 para sa bawat usapin</span>
+                </div>
+            `;
+
+            TRAITS.forEach(trait => {
+                const currentVal = peerScores[evalId][targetId][trait.id] || 0;
+
+                html += `
+                    <div class="p-4 rounded-xl border border-slate-200 hover:border-teal-300 transition bg-slate-50/50 space-y-3">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-teal-700 text-white font-bold text-xs flex items-center justify-center">
+                                        ${trait.id}
+                                    </span>
+                                    <h4 class="font-bold text-sm text-slate-800">${trait.title}</h4>
+                                </div>
+                                <p class="text-xs text-slate-600 pl-8 leading-relaxed">${trait.desc}</p>
+                            </div>
+                        </div>
+
+                        <!-- 1-4 DepEd Scale Clickable Score Selector -->
+                        <div class="pl-8 flex flex-wrap items-center gap-2 pt-1">
+                            ${[1, 2, 3, 4].map(score => {
+                                const isSelected = currentVal === score;
+                                const labels = {
+                                    1: { main: '1 - NO', sub: 'Not Observed' },
+                                    2: { main: '2 - RO', sub: 'Rarely Observed' },
+                                    3: { main: '3 - SO', sub: 'Sometimes Observed' },
+                                    4: { main: '4 - AO', sub: 'Always Observed' }
+                                };
+                                return `
+                                    <button type="button" 
+                                            onclick="selectFormScore('${evalId}', '${targetId}', ${trait.id}, ${score})"
+                                            class="flex-1 min-w-[90px] py-2.5 px-3 rounded-xl border text-xs font-bold transition flex flex-col items-center justify-center gap-0.5
+                                            ${isSelected 
+                                                ? 'bg-teal-700 text-white border-teal-700 shadow-md ring-2 ring-teal-300 scale-105' 
+                                                : 'bg-white text-slate-700 border-slate-300 hover:bg-teal-50 hover:border-teal-400'}">
+                                        <span class="text-sm font-extrabold">${labels[score].main}</span>
+                                        <span class="text-[10px] opacity-80 font-normal">${labels[score].sub}</span>
+                                    </button>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Quick Next Button
+            html += `
+                <div class="flex justify-end pt-2">
+                    <button onclick="navigateNextTarget()" class="bg-teal-700 hover:bg-teal-800 text-white text-xs px-5 py-2.5 rounded-xl font-bold transition shadow flex items-center gap-2">
+                        Susunod na Kamag-aral <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            `;
+
+            wrapper.innerHTML = html;
+        }
+
+        function selectFormScore(evalId, targetId, traitId, score) {
+            savePeerScore(evalId, targetId, traitId, score);
+            renderFormQuestions();
+        }
+
+        function navigateNextTarget() {
+            const targetSelect = document.getElementById('form-target');
+            if (targetSelect.selectedIndex < targetSelect.options.length - 1) {
+                targetSelect.selectedIndex += 1;
+                renderFormQuestions();
+            } else {
+                alert("Nakarating na sa dulo ng talaan ng kamag-aral para sa tagasuring ito!");
+            }
+        }
+
+        // MODE 1: Evaluator Grid Mode (1-4 scale)
+        function renderEvaluatorMode(container) {
+            container.innerHTML = `
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Pumili ng Evaluator (Ang Mag-aaral na Nagmamarka):</label>
+                        <select id="sel-evaluator" onchange="renderEvaluatorGrid()" class="px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none w-72">
+                            ${students.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
+                        </select>
+                    </div>
+                    <span class="text-xs text-slate-400">Tandaan: Hindi mamarkahan ng mag-aaral ang kanyang sarili.</span>
+                </div>
+                <div id="evaluator-grid-wrapper" class="overflow-x-auto custom-scrollbar">
+                    <!-- Dynamic Grid -->
+                </div>
+            `;
+            renderEvaluatorGrid();
+        }
+
+        function renderEvaluatorGrid() {
+            const evalId = document.getElementById('sel-evaluator').value;
+            const wrapper = document.getElementById('evaluator-grid-wrapper');
+            const targetStudents = students.filter(s => s.id !== evalId);
+
+            if (targetStudents.length === 0) {
+                wrapper.innerHTML = `<p class="text-xs text-slate-400 py-4">Kailangan ng higit sa 1 mag-aaral sa klase.</p>`;
+                return;
+            }
+
+            if (!peerScores[evalId]) peerScores[evalId] = {};
+
+            let html = `
+                <table class="w-full text-xs text-left border-collapse">
+                    <thead class="bg-slate-100 text-slate-700">
+                        <tr>
+                            <th class="p-3 border">Kamag-aral na Mamarkahan</th>
+                            ${TRAITS.map(t => `
+                                <th class="p-2 border text-center max-w-[130px] group relative cursor-pointer" title="${t.title}: ${t.desc}">
+                                    <div class="font-bold">Trait ${t.id}</div>
+                                    <div class="text-[10px] text-slate-500 font-normal truncate">${t.title.split('(')[0]}</div>
+                                </th>
+                            `).join('')}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+            `;
+
+            targetStudents.forEach(target => {
+                if (!peerScores[evalId][target.id]) peerScores[evalId][target.id] = {};
+
+                html += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-2.5 border font-semibold text-slate-800">${escapeHtml(target.name)}</td>
+                        ${TRAITS.map(t => {
+                            const val = peerScores[evalId][target.id][t.id] || '';
+                            return `
+                                <td class="p-1.5 border text-center">
+                                    <select onchange="savePeerScore('${evalId}', '${target.id}', ${t.id}, this.value)" 
+                                            class="w-14 p-1 text-center border rounded-lg font-bold ${val ? 'bg-teal-50 text-teal-800 border-teal-300' : 'bg-white text-slate-400'}">
+                                        <option value="">-</option>
+                                        <option value="1" ${val == 1 ? 'selected' : ''}>1</option>
+                                        <option value="2" ${val == 2 ? 'selected' : ''}>2</option>
+                                        <option value="3" ${val == 3 ? 'selected' : ''}>3</option>
+                                        <option value="4" ${val == 4 ? 'selected' : ''}>4</option>
+                                    </select>
+                                </td>
+                            `;
+                        }).join('')}
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            wrapper.innerHTML = html;
+        }
+
+        // MODE 2: Target Student Grid Mode
+        function renderTargetMode(container) {
+            container.innerHTML = `
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Pumili ng Tinatasa (Target Student):</label>
+                        <select id="sel-target" onchange="renderTargetGrid()" class="px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none w-72">
+                            ${students.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div id="target-grid-wrapper" class="overflow-x-auto custom-scrollbar">
+                    <!-- Dynamic Grid -->
+                </div>
+            `;
+            renderTargetGrid();
+        }
+
+        function renderTargetGrid() {
+            const targetId = document.getElementById('sel-target').value;
+            const wrapper = document.getElementById('target-grid-wrapper');
+            const evaluators = students.filter(s => s.id !== targetId);
+
+            let html = `
+                <table class="w-full text-xs text-left border-collapse">
+                    <thead class="bg-slate-100 text-slate-700">
+                        <tr>
+                            <th class="p-3 border">Tagasuri (Evaluator)</th>
+                            ${TRAITS.map(t => `<th class="p-2 border text-center" title="${t.title}: ${t.desc}">Trait ${t.id}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+            `;
+
+            evaluators.forEach(evaluator => {
+                if (!peerScores[evaluator.id]) peerScores[evaluator.id] = {};
+                if (!peerScores[evaluator.id][targetId]) peerScores[evaluator.id][targetId] = {};
+
+                html += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-2.5 border font-semibold text-slate-800">${escapeHtml(evaluator.name)}</td>
+                        ${TRAITS.map(t => {
+                            const val = peerScores[evaluator.id][targetId][t.id] || '';
+                            return `
+                                <td class="p-1.5 border text-center">
+                                    <select onchange="savePeerScore('${evaluator.id}', '${targetId}', ${t.id}, this.value)" 
+                                            class="w-14 p-1 text-center border rounded-lg font-bold ${val ? 'bg-teal-50 text-teal-800 border-teal-300' : 'bg-white text-slate-400'}">
+                                        <option value="">-</option>
+                                        <option value="1" ${val == 1 ? 'selected' : ''}>1</option>
+                                        <option value="2" ${val == 2 ? 'selected' : ''}>2</option>
+                                        <option value="3" ${val == 3 ? 'selected' : ''}>3</option>
+                                        <option value="4" ${val == 4 ? 'selected' : ''}>4</option>
+                                    </select>
+                                </td>
+                            `;
+                        }).join('')}
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            wrapper.innerHTML = html;
+        }
+
+        // MODE 3: Teacher Validation Mode (30% weight, 1-4 scale)
+        function renderTeacherMode(container) {
+            container.innerHTML = `
+                <div class="border-b pb-3 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 text-sm">Teacher Validation Input (May bigat na 30% sa Kabuuang Marka)</h3>
+                    <span class="text-xs text-slate-400">Direct input ng Guro para sa lahat ng mag-aaral (Scale 1 - 4)</span>
+                </div>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-xs text-left border-collapse">
+                        <thead class="bg-blue-50 text-blue-900">
+                            <tr>
+                                <th class="p-3 border">Mag-aaral</th>
+                                ${TRAITS.map(t => `<th class="p-2 border text-center" title="${t.title}: ${t.desc}">Trait ${t.id}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            ${students.map(s => {
+                                if (!teacherScores[s.id]) teacherScores[s.id] = {};
+                                return `
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-2.5 border font-semibold text-slate-800">${escapeHtml(s.name)}</td>
+                                        ${TRAITS.map(t => {
+                                            const val = teacherScores[s.id][t.id] || '';
+                                            return `
+                                                <td class="p-1.5 border text-center">
+                                                    <select onchange="saveTeacherScore('${s.id}', ${t.id}, this.value)" 
+                                                            class="w-14 p-1 text-center border rounded-lg font-bold ${val ? 'bg-blue-100 text-blue-900 border-blue-300' : 'bg-white text-slate-400'}">
+                                                        <option value="">-</option>
+                                                        <option value="1" ${val == 1 ? 'selected' : ''}>1</option>
+                                                        <option value="2" ${val == 2 ? 'selected' : ''}>2</option>
+                                                        <option value="3" ${val == 3 ? 'selected' : ''}>3</option>
+                                                        <option value="4" ${val == 4 ? 'selected' : ''}>4</option>
+                                                    </select>
+                                                </td>
+                                            `;
+                                        }).join('')}
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Score Saving Handlers
+        function savePeerScore(evalId, targetId, traitId, val) {
+            if (!peerScores[evalId]) peerScores[evalId] = {};
+            if (!peerScores[evalId][targetId]) peerScores[evalId][targetId] = {};
+            
+            if (val === '' || val === 0) {
+                delete peerScores[evalId][targetId][traitId];
+            } else {
+                peerScores[evalId][targetId][traitId] = parseInt(val);
+            }
+            saveToLocalStorage();
+        }
+
+        function saveTeacherScore(targetId, traitId, val) {
+            if (!teacherScores[targetId]) teacherScores[targetId] = {};
+            
+            if (val === '') {
+                delete teacherScores[targetId][traitId];
+            } else {
+                teacherScores[targetId][traitId] = parseInt(val);
+            }
+            saveToLocalStorage();
+        }
+
+        // Computation Engine (Adjusted for 1-4 DepEd Scale)
+        function computeStudentScores(studentId) {
+            let peerSums = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0 };
+            let peerCounts = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0 };
+
+            students.forEach(evaluator => {
+                if (evaluator.id !== studentId && peerScores[evaluator.id] && peerScores[evaluator.id][studentId]) {
+                    const scores = peerScores[evaluator.id][studentId];
+                    TRAITS.forEach(t => {
+                        if (scores[t.id]) {
+                            peerSums[t.id] += scores[t.id];
+                            peerCounts[t.id] += 1;
+                        }
+                    });
+                }
+            });
+
+            let peerTraitAvg = {};
+            let peerTotalSum = 0;
+            let peerTotalCount = 0;
+
+            TRAITS.forEach(t => {
+                const avg = peerCounts[t.id] > 0 ? (peerSums[t.id] / peerCounts[t.id]) : 0;
+                peerTraitAvg[t.id] = avg;
+                if (avg > 0) {
+                    peerTotalSum += avg;
+                    peerTotalCount++;
+                }
+            });
+
+            const peerOverallAvg = peerTotalCount > 0 ? (peerTotalSum / peerTotalCount) : 0;
+
+            let teacherTraitAvg = {};
+            let teacherTotalSum = 0;
+            let teacherTotalCount = 0;
+
+            TRAITS.forEach(t => {
+                const val = (teacherScores[studentId] && teacherScores[studentId][t.id]) ? teacherScores[studentId][t.id] : 0;
+                teacherTraitAvg[t.id] = val;
+                if (val > 0) {
+                    teacherTotalSum += val;
+                    teacherTotalCount++;
+                }
+            });
+
+            const teacherOverallAvg = teacherTotalCount > 0 ? (teacherTotalSum / teacherTotalCount) : 0;
+
+            let combinedTraitAvg = {};
+            TRAITS.forEach(t => {
+                const p = peerTraitAvg[t.id];
+                const tch = teacherTraitAvg[t.id];
+
+                if (p > 0 && tch > 0) {
+                    combinedTraitAvg[t.id] = (p * 0.70) + (tch * 0.30);
+                } else if (p > 0) {
+                    combinedTraitAvg[t.id] = p;
+                } else if (tch > 0) {
+                    combinedTraitAvg[t.id] = tch;
+                } else {
+                    combinedTraitAvg[t.id] = 0;
+                }
+            });
+
+            let finalScore = 0;
+            if (peerOverallAvg > 0 && teacherOverallAvg > 0) {
+                finalScore = (peerOverallAvg * 0.70) + (teacherOverallAvg * 0.30);
+            } else {
+                finalScore = peerOverallAvg || teacherOverallAvg || 0;
+            }
+
+            return {
+                peerTraitAvg,
+                peerOverallAvg,
+                teacherTraitAvg,
+                teacherOverallAvg,
+                combinedTraitAvg,
+                finalScore
+            };
+        }
+
+        // TAB 3: Analytics & Individual Counseling Alerts
+        function updateAnalytics() {
+            document.getElementById('stat-total-students').textContent = students.length;
+
+            let totalClassScore = 0;
+            let activeCount = 0;
+            let alertStudents = [];
+
+            const masterTbody = document.getElementById('master-table-body');
+            let masterRowsHtml = '';
+
+            let traitClassSums = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0 };
+            let traitClassCounts = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0 };
+
+            let scoreRanges = { high: 0, average: 0, low: 0 };
+
+            students.forEach(s => {
+                const res = computeStudentScores(s.id);
+                if (res.finalScore > 0) {
+                    totalClassScore += res.finalScore;
+                    activeCount++;
+
+                    // Categorization
+                    if (res.finalScore >= 3.5) scoreRanges.high++;
+                    else if (res.finalScore >= 2.5) scoreRanges.average++;
+                    else scoreRanges.low++;
+                }
+
+                const t1 = res.combinedTraitAvg[1];
+                const t2 = res.combinedTraitAvg[2];
+                
+                let isAlert = false;
+                let alertReason = [];
+
+                if (t1 > 0 && t1 < 2.5) {
+                    isAlert = true;
+                    alertReason.push("Mababang Puntos sa Respeto/Panunukso (Bullying Concern)");
+                }
+                if (t2 > 0 && t2 < 2.5) {
+                    isAlert = true;
+                    alertReason.push("Mababang Puntos sa Katapatan");
+                }
+                if (res.finalScore > 0 && res.finalScore < 2.5) {
+                    isAlert = true;
+                    alertReason.push("Kabuuang Asal ay Nangangailangan ng Gabay (< 2.5)");
+                }
+
+                if (isAlert) alertStudents.push({ student: s, res, reasons: alertReason });
+
+                TRAITS.forEach(t => {
+                    if (res.combinedTraitAvg[t.id] > 0) {
+                        traitClassSums[t.id] += res.combinedTraitAvg[t.id];
+                        traitClassCounts[t.id]++;
+                    }
+                });
+
+                masterRowsHtml += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-2.5 font-semibold text-slate-800">${escapeHtml(s.name)}</td>
+                        ${TRAITS.map(t => {
+                            const val = res.combinedTraitAvg[t.id];
+                            return `<td class="p-2 text-center font-medium ${val > 0 && val < 2.5 ? 'text-rose-600 bg-rose-50 font-bold' : 'text-slate-600'}">${val > 0 ? val.toFixed(1) : '-'}</td>`;
+                        }).join('')}
+                        <td class="p-2 text-center font-bold bg-teal-50 text-teal-800">${res.peerOverallAvg > 0 ? res.peerOverallAvg.toFixed(2) : '-'}</td>
+                        <td class="p-2 text-center font-bold bg-blue-50 text-blue-800">${res.teacherOverallAvg > 0 ? res.teacherOverallAvg.toFixed(2) : '-'}</td>
+                        <td class="p-2 text-center font-extrabold bg-emerald-100 text-emerald-900">${res.finalScore > 0 ? res.finalScore.toFixed(2) : '-'}</td>
+                        <td class="p-2 text-center">
+                            ${isAlert ? `<span class="px-2 py-0.5 text-[10px] bg-rose-100 text-rose-700 font-bold rounded-full flex items-center justify-center gap-1"><i class="fa-solid fa-bell"></i> For Counseling</span>` :
+                              `<span class="text-slate-400 text-[11px]">Maayos</span>`}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            masterTbody.innerHTML = masterRowsHtml || `<tr><td colspan="12" class="text-center py-6 text-slate-400">Walang data na maipakita.</td></tr>`;
+
+            const classGWA = activeCount > 0 ? (totalClassScore / activeCount).toFixed(2) : '0.00';
+            document.getElementById('stat-class-gwa').textContent = classGWA;
+            document.getElementById('stat-alerts-count').textContent = alertStudents.length;
+
+            const alertPanel = document.getElementById('alert-panel');
+            const alertList = document.getElementById('alert-list');
+            if (alertStudents.length > 0) {
+                alertPanel.classList.remove('hidden');
+                alertList.innerHTML = alertStudents.map(item => `
+                    <div class="bg-white p-3.5 rounded-xl border border-rose-200 shadow-sm text-xs space-y-1.5">
+                        <div class="flex justify-between items-center">
+                            <p class="font-bold text-rose-900 text-sm">${escapeHtml(item.student.name)}</p>
+                            <span class="px-2 py-0.5 bg-rose-100 text-rose-700 font-extrabold rounded-md text-[10px]">${item.res.finalScore.toFixed(2)} / 4.0</span>
+                        </div>
+                        <ul class="list-disc list-inside text-[11px] text-rose-700 font-medium space-y-0.5">
+                            ${item.reasons.map(r => `<li>${r}</li>`).join('')}
+                        </ul>
+                    </div>
+                `).join('');
+            } else {
+                alertPanel.classList.add('hidden');
+            }
+
+            renderCharts(traitClassSums, traitClassCounts, scoreRanges);
+        }
+
+        function renderCharts(sums, counts, ranges) {
+            const traitData = TRAITS.map(t => counts[t.id] > 0 ? (sums[t.id] / counts[t.id]).toFixed(2) : 0);
+
+            const ctx1 = document.getElementById('chart-traits').getContext('2d');
+            if (chartTraits) chartTraits.destroy();
+            chartTraits = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['T1 (Respect)', 'T2 (Honesty)', 'T3 (Spiritual)', 'T4 (Ethics)', 'T5 (Kalikasan)', 'T6 (Makabansa)', 'T7 (Community)'],
+                    datasets: [{
+                        label: 'GWA ng Klase per Trait (1-4)',
+                        data: traitData,
+                        backgroundColor: '#0d9488',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { min: 1, max: 4 }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById('chart-distribution').getContext('2d');
+            if (chartDistribution) chartDistribution.destroy();
+            chartDistribution = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Always Observed (3.5 - 4.0)', 'Sometimes Observed (2.5 - 3.49)', 'For Counseling (< 2.5)'],
+                    datasets: [{
+                        data: [ranges.high, ranges.average, ranges.low],
+                        backgroundColor: ['#10b981', '#3b82f6', '#f43f5e']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        // TAB 4: Individual Student Profile & Guidance Counseling Report
+        function populateReportDropdown() {
+            const select = document.getElementById('report-student-select');
+            select.innerHTML = students.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+        }
+
+        function generateIndividualReport() {
+            const select = document.getElementById('report-student-select');
+            if (!select.value) return;
+
+            const student = students.find(s => s.id === select.value);
+            if (!student) return;
+
+            const res = computeStudentScores(student.id);
+
+            document.getElementById('rep-name').textContent = student.name;
+            document.getElementById('rep-lrn').textContent = student.lrn;
+            document.getElementById('rep-gender').textContent = student.gender;
+            document.getElementById('rep-final-score').textContent = res.finalScore > 0 ? `${res.finalScore.toFixed(2)} / 4.0` : 'Walang Iskor';
+
+            const tbody = document.getElementById('rep-traits-body');
+            tbody.innerHTML = TRAITS.map(t => {
+                const peerVal = res.peerTraitAvg[t.id];
+                const tchVal = res.teacherTraitAvg[t.id];
+                const combVal = res.combinedTraitAvg[t.id];
+
+                let interp = 'Sometimes Observed (SO)';
+                let interpClass = 'text-teal-700 font-semibold';
+
+                if (combVal > 0 && combVal < 2.5) {
+                    interp = 'Rarely / Not Observed (NO)';
+                    interpClass = 'text-rose-600 font-bold';
+                } else if (combVal >= 3.5) {
+                    interp = 'Always Observed (AO)';
+                    interpClass = 'text-emerald-700 font-bold';
+                }
+
+                return `
+                    <tr>
+                        <td class="p-2 border">
+                            <strong class="text-slate-800 block">${t.title}</strong>
+                            <span class="text-slate-500 text-[11px] block mt-0.5">${t.desc}</span>
+                        </td>
+                        <td class="p-2 border text-center font-medium">${peerVal > 0 ? peerVal.toFixed(1) : '-'}</td>
+                        <td class="p-2 border text-center font-medium">${tchVal > 0 ? tchVal.toFixed(1) : '-'}</td>
+                        <td class="p-2 border text-center font-bold text-slate-800">${combVal > 0 ? combVal.toFixed(1) : '-'}</td>
+                        <td class="p-2 border text-center ${interpClass}">${combVal > 0 ? interp : '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const guidanceDiv = document.getElementById('rep-guidance-notes');
+            const recDiv = document.getElementById('rep-recommendations');
+
+            if (res.finalScore === 0) {
+                guidanceDiv.textContent = "Wala pang sapat na datos ng evaluation para sa mag-aaral na ito.";
+                recDiv.textContent = "Kumpletuhin ang peer at teacher rating sa tab ng Pagtatala.";
+                return;
+            }
+
+            let notes = [];
+            let recs = [];
+
+            if (res.combinedTraitAvg[1] < 2.5) {
+                notes.push("Mababang marka sa Trait 1 (Respect/Sensitivity). May obserbasyon ng panunukso, pangingiliti, o hindi maayos na pakikitungo sa mga kamag-aral.");
+                recs.push("I-refer sa Guidance Office para sa Individual Counseling kaugnay ng Peer Sensitivity at Anti-Bullying Awareness.");
+            }
+            if (res.combinedTraitAvg[2] < 2.5) {
+                notes.push("Mababang marka sa Trait 2 (Honesty & Integrity). Sumasalamin sa hirap sa pagpapakita ng katapatan o pag-amin sa pagkakamali.");
+                recs.push("I-schedule para sa Individual Values Formation Counseling hinggil sa Honesty & Responsibility.");
+            }
+            if (res.finalScore > 0 && res.finalScore < 2.5 && notes.length === 0) {
+                notes.push("Ang kabuuang marka ng asal ay mas mababa sa 2.50 threshold (Rarely Observed).");
+                recs.push("Inirerekomenda ang regular na Individual Guidance Counseling at konsultasyon sa mga magulang.");
+            }
+            if (notes.length === 0) {
+                notes.push("Ang mag-aaral ay nagpapakita ng maayos at positibong asal sa loob ng paaralan batay sa obserbasyon ng kanyang mga kamag-aral at guro.");
+                recs.push("Ipagpatuloy ang pagsubaybay at pagpapatibay ng magandang asal. Walang kinakailangang counseling sa kasalukuyan.");
+            }
+
+            guidanceDiv.innerHTML = notes.map(n => `<p>• ${n}</p>`).join('');
+            recDiv.innerHTML = recs.map(r => `<p>• ${r}</p>`).join('');
+        }
+
+        // CSV Export Functionality
+        function exportToCSV() {
+            if (students.length === 0) {
+                alert("Walang datos na ma-i-export.");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Pangalan,LRN,Kasarian,T1_Respect,T2_Honesty,T3_Spiritual,T4_Ethics,T5_Kalikasan,T6_Makabansa,T7_Community,Peer_70,Teacher_30,Final_Conduct_Score_Max4,Counseling_Flag\n";
+
+            students.forEach(s => {
+                const res = computeStudentScores(s.id);
+                const needsCounseling = (res.combinedTraitAvg[1] < 2.5) || (res.combinedTraitAvg[2] < 2.5) || (res.finalScore < 2.5);
+                const row = [
+                    `"${s.name}"`,
+                    `"${s.lrn}"`,
+                    `"${s.gender}"`,
+                    res.combinedTraitAvg[1].toFixed(2),
+                    res.combinedTraitAvg[2].toFixed(2),
+                    res.combinedTraitAvg[3].toFixed(2),
+                    res.combinedTraitAvg[4].toFixed(2),
+                    res.combinedTraitAvg[5].toFixed(2),
+                    res.combinedTraitAvg[6].toFixed(2),
+                    res.combinedTraitAvg[7].toFixed(2),
+                    res.peerOverallAvg.toFixed(2),
+                    res.teacherOverallAvg.toFixed(2),
+                    res.finalScore.toFixed(2),
+                    needsCounseling ? "YES - Individual Counseling Needed" : "NO"
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `PAG_ASA_Conduct_Summary_Scale4_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Local Storage Utilities
+        function saveToLocalStorage() {
+            localStorage.setItem('pagasa_students', JSON.stringify(students));
+            localStorage.setItem('pagasa_peerScores', JSON.stringify(peerScores));
+            localStorage.setItem('pagasa_teacherScores', JSON.stringify(teacherScores));
+        }
+
+        function loadFromLocalStorage() {
+            const savedStu = localStorage.getItem('pagasa_students');
+            const savedPeer = localStorage.getItem('pagasa_peerScores');
+            const savedTeacher = localStorage.getItem('pagasa_teacherScores');
+
+            if (savedStu) students = JSON.parse(savedStu);
+            if (savedPeer) peerScores = JSON.parse(savedPeer);
+            if (savedTeacher) teacherScores = JSON.parse(savedTeacher);
+        }
+
+        function escapeHtml(str) {
+            return str ? str.replace(/[&<>"']/g, m => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+            })[m]) : '';
+        }
+    </script>
+</body>
+</html>
